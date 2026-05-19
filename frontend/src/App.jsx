@@ -39,13 +39,18 @@ function cleanMarkdown(text) {
 }
 
 function App() {
-  const [appState, setAppState] = useState('HOME'); // HOME, LOADING, RESULTS, CHAT
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState(null);
+  // localStorage'dan başlangıç değerlerini yükle
+  const [appState, setAppState] = useState(() => localStorage.getItem('wb_state') || 'HOME');
+  const [query, setQuery] = useState(() => localStorage.getItem('wb_query') || '');
+  const [results, setResults] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wb_results')) || null; } catch { return null; }
+  });
   const [loadingStep, setLoadingStep] = useState(0);
-  
+
   // Chat state
-  const [chatMessages, setChatMessages] = useState([]);
+  const [chatMessages, setChatMessages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wb_chat')) || []; } catch { return []; }
+  });
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   
@@ -75,6 +80,15 @@ function App() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  // localStorage'a kaydet
+  useEffect(() => { localStorage.setItem('wb_chat', JSON.stringify(chatMessages)); }, [chatMessages]);
+  useEffect(() => { if (results) localStorage.setItem('wb_results', JSON.stringify(results)); }, [results]);
+  useEffect(() => { localStorage.setItem('wb_query', query); }, [query]);
+  useEffect(() => {
+    // LOADING durumunu kaydetme — yenilemede bozulur
+    if (appState !== 'LOADING') localStorage.setItem('wb_state', appState);
+  }, [appState]);
 
   // Chat ekranına geçince karşılama mesajı ekle
   const goToChat = () => {
@@ -107,6 +121,7 @@ function App() {
       const data = await response.json();
       setResults(data);
       setChatMessages([]); // Yeni arama — chat'i sıfırla
+      localStorage.removeItem('wb_chat'); // localStorage'dan da temizle
       setAppState('RESULTS');
     } catch (error) {
       console.error(error);
@@ -140,6 +155,7 @@ function App() {
           message: text,
           analysis_context: results?.ai_report || '',
           product_name: query,
+          history: chatMessages, // ← Mevcut sohbet geçmişini gönder
         }),
       });
 

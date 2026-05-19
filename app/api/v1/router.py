@@ -28,10 +28,11 @@ async def analyze_product(request: AnalyzeProductRequest, db: AsyncSession = Dep
 
 @api_router.post("/chat", summary="Chat with Gemini about the product", tags=["Chat"])
 async def chat_with_gemini(request: dict, db: AsyncSession = Depends(get_db)):
-    """Chat endpoint - analysis_context + message + product_name alır."""
+    """Chat endpoint - analysis_context + message + product_name + history alır."""
     message = request.get("message")
     analysis_context = request.get("analysis_context", "")
     product_name = request.get("product_name", "")
+    history = request.get("history", [])  # Sohbet geçmişi
     
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
@@ -51,7 +52,8 @@ async def chat_with_gemini(request: dict, db: AsyncSession = Depends(get_db)):
         reply = await ai_service.chat(
             analysis_context=analysis_context,
             user_message=message,
-            product_name=product_name
+            product_name=product_name,
+            history=history,
         )
         return {"reply": reply}
     except Exception as e:

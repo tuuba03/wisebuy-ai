@@ -330,18 +330,28 @@ SADECE JSON liste d\u00f6nd\u00fcr: ["tespit 1", "tespit 2"]
         except Exception:
             return []
 
-    async def chat(self, analysis_context: str, user_message: str, product_name: str = "") -> str:
+    async def chat(self, analysis_context: str, user_message: str, product_name: str = "", history: list = None) -> str:
+        # Sohbet geçmişini oluştur
+        history_block = ""
+        if history:
+            for msg in history[-10:]:  # Son 10 mesajı al (token tasarrufu)
+                role = "Kullanıcı" if msg.get("role") == "user" else "WiseBuy AI"
+                history_block += f"{role}: {msg.get('text', '')}\n"
+        
         prompt = f"""Sen WiseBuy AI alışveriş asistanısın.
 
-Önceki ürün analiz raporu ('{product_name}'):
+Ürün analiz raporu ('{product_name}'):
 {analysis_context}
 
-Kullanıcının sorusu: {user_message}
+{f'Sohbet geçmişi:{chr(10)}{history_block}' if history_block else ''}
+Kullanıcı: {user_message}
+WiseBuy AI:
 
-Yukarıdaki analiz raporunu göz önünde bulundurarak kullanıcının sorusuna:
+Kurallar:
+- Analiz raporunu ve sohbet geçmişini göz önünde bulundurarak cevap ver
+- Bir önceki cevabına atıf yapabilirsin ("Az önce belirttiğim gibi..." vb.)
 - Kısa, net ve anlaşılır biçimde cevap ver
-- Emin değilsen asan, yanlış bilgi verme
-- Gerekirse "Bu konuda kesin bir verim yok, ama..." diyebilirsin
+- Emin değilsen aşarm, yanlış bilgi verme
 - Emoji kullan, sıcak bir dil benimse
 """
         try:
