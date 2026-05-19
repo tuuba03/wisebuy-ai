@@ -51,8 +51,8 @@ class GeminiAIService:
             for model in self.MODELS:
                 url = f"{self.base_url}/{model}:generateContent?key={self.api_key}"
                 
-                # 429 için 3 kez yeniden dene (backoff ile)
-                for attempt in range(3):
+                # 429 için 2 kez yeniden dene (kısa backoff)
+                for attempt in range(2):
                     try:
                         response = await client.post(url, json=payload)
                         
@@ -67,8 +67,8 @@ class GeminiAIService:
                                 break  # Bu model çalışmıyor, bir sonrakine geç
                         
                         elif response.status_code == 429:
-                            wait = (attempt + 1) * 5  # 5s, 10s, 15s
-                            logger.warning(f"[Gemini] Model '{model}' rate limit (429), {wait}s bekleniyor... (deneme {attempt+1}/3)")
+                            wait = (attempt + 1) * 2  # 2s, 4s
+                            logger.warning(f"[Gemini] Model '{model}' rate limit (429), {wait}s bekleniyor... (deneme {attempt+1}/2)")
                             await asyncio.sleep(wait)
                             last_error = f"429 - Rate limit"
                             continue  # Aynı modeli tekrar dene
